@@ -20,6 +20,10 @@
   "bugs": {
     "url": "https://github.com/RainSunMe/cc-vision-hook/issues"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "bin": {
     "cvh": "./dist/cli.js",
     "cc-vision-hook": "./dist/cli.js"
@@ -32,7 +36,11 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "bun test"
+    "test": "bun test",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "ci": "tsc --noEmit -p tsconfig.json && bun test && bun run build",
+    "smoke": "node dist/cli.js help"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.81",
@@ -41,6 +49,7 @@
     "ai": "^6.0.194"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@types/node": "^24.0.0",
     "typescript": "^6.0.3"
   },
