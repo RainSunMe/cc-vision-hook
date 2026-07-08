@@ -1,0 +1,57 @@
+{
+  "name": "cc-vision-hook",
+  "version": "0.1.0",
+  "description": "Claude Code Hook toolkit that lets vision-blind (silently-ignoring) models understand pasted/tool-produced images by appending an AI-generated description as additionalContext.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "claude-code-hook",
+    "vision",
+    "image",
+    "multimodal",
+    "ai-sdk"
+  ],
+  "homepage": "https://github.com/RainSunMe/cc-vision-hook#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RainSunMe/cc-vision-hook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RainSunMe/cc-vision-hook/issues"
+  },
+  "bin": {
+    "cvh": "./dist/cli.js",
+    "cc-vision-hook": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./sdk": "./dist/sdk/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.81",
+    "@ai-sdk/google": "^3.0.0",
+    "@ai-sdk/openai": "^3.0.0",
+    "ai": "^6.0.194"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ]
+}

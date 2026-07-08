@@ -1,0 +1,10 @@
+{
+  "type": "text",
+  "file": {
+    "filePath": "/tmp/cc_test_workspace/notes.txt",
+    "content": "hello world\n",
+    "numLines": 1,
+    "startLine": 1,
+    "totalLines": 1
+  }
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "type": "image",
+    "source": {
+      "type": "base64",
+      "media_type": "image/png",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    }
+  }
+]
