@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix `bin` field paths in `package.json` to remove the leading `./` (npm normalizes this automatically on publish but warns every time — this also serves as the first end-to-end test of the automated release pipeline).
+
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
 ## [0.1.0] - 2026-07-08

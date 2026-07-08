@@ -1,6 +1,6 @@
 {
   "name": "cc-vision-hook",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Claude Code Hook toolkit that lets vision-blind (silently-ignoring) models understand pasted/tool-produced images by appending an AI-generated description as additionalContext.",
   "type": "module",
   "license": "MIT",
@@ -25,8 +25,8 @@
     "provenance": true
   },
   "bin": {
-    "cvh": "./dist/cli.js",
-    "cc-vision-hook": "./dist/cli.js"
+    "cvh": "dist/cli.js",
+    "cc-vision-hook": "dist/cli.js"
   },
   "exports": {
     ".": "./dist/index.js",
