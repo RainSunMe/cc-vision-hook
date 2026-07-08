@@ -141,7 +141,17 @@ When wiring this up against a real Claude Code session, set `CVH_CLAUDE_HOME` to
 
 ## Contributing
 
-Issues and PRs are welcome. Please run `bun run typecheck && bun test` before submitting.
+Issues and PRs are welcome. Please run `bun run ci` (typecheck + test + build) before submitting.
+
+Contributions that add or change behavior should include a [changeset](https://github.com/changesets/changesets):
+
+```bash
+bun run changeset
+```
+
+## Releasing
+
+Releases are published to npm via [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC, no long-lived tokens) whenever a `v*` tag is pushed. See [`docs/releasing.md`](./docs/releasing.md) for the full process and [`docs/release-checklist.md`](./docs/release-checklist.md) for the pre-flight checklist.
 
 ## License
 

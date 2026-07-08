@@ -141,7 +141,17 @@ node dist/cli.js install
 
 ## 贡献
 
-欢迎提交 Issue 和 PR。提交前请先跑通 `bun run typecheck && bun test`。
+欢迎提交 Issue 和 PR。提交前请先跑通 `bun run ci`（typecheck + test + build）。
+
+涉及行为变更的贡献请附带一个 [changeset](https://github.com/changesets/changesets)：
+
+```bash
+bun run changeset
+```
+
+## 发布
+
+发布通过 npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers)（基于 OIDC，不存任何长期 token）完成，推送 `v*` tag 即触发。完整流程见 [`docs/releasing.md`](./docs/releasing.md)，发布前检查清单见 [`docs/release-checklist.md`](./docs/release-checklist.md)。
 
 ## 许可证
 

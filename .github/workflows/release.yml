@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14'
+          registry-url: https://registry.npmjs.org
+      - name: Ensure npm CLI supports Trusted Publishing (requires >= 11.5.1)
+        run: npm install -g npm@latest
+      - name: Check Node and npm versions
+        run: |
+          node --version
+          npm --version
+      - run: bun install --frozen-lockfile
+      - name: Check tag matches package version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="${GITHUB_REF_NAME#v}"
+          if [ "$VERSION" != "$TAG" ]; then
+            echo "package.json version $VERSION does not match tag $GITHUB_REF_NAME"
+            exit 1
+          fi
+      - name: Check npm version is unpublished
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "cc-vision-hook@$VERSION" version >/dev/null 2>&1; then
+            echo "cc-vision-hook@$VERSION already exists on npm"
+            exit 1
+          fi
+      - run: bun run ci
+      - name: Publish to npm
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *-* ]]; then
+            npm publish --access public --tag alpha
+          else
+            npm publish --access public --tag latest
+          fi
+      - name: Verify npm publish
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          for attempt in 1 2 3 4 5 6; do
+            if npm view "cc-vision-hook@$VERSION" name version bin; then
+              exit 0
+            fi
+            echo "npm registry has not returned cc-vision-hook@$VERSION yet; retry $attempt/6"
+            sleep 10
+          done
+          exit 1
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
