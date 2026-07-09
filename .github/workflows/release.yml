@@ -23,7 +23,12 @@ jobs:
           node-version: '22.14'
           registry-url: https://registry.npmjs.org
       - name: Ensure npm CLI supports Trusted Publishing (requires >= 11.5.1)
-        run: npm install -g npm@latest
+        # 固定主版本号为 11（而非 @latest）：npm@12 把最低 Node 版本要求提高到了
+        # ^22.22.2 || ^24.15.0 || >=26.0.0，与本 workflow 固定的 Node 22.14 不兼容，
+        # 导致 2026-07-09 发布 v0.2.0 时这一步直接失败（EBADENGINE）。npm@11 系列
+        # 的引擎要求是 ^20.17.0 || >=22.9.0，兼容当前 Node 版本，且已满足 Trusted
+        # Publishing 所需的 >= 11.5.1。
+        run: npm install -g npm@11
       - name: Check Node and npm versions
         run: |
           node --version
