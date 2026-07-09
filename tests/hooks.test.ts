@@ -38,7 +38,13 @@ const writeEnabledConfig = async (): Promise<void> => {
 beforeEach(async () => {
   tmpHome = await mkdtemp(join(tmpdir(), "cvh-hooks-test-"));
   process.env.CVH_CLAUDE_HOME = tmpHome;
+  // 注意：mock.module 是整体替换模块 exports，必须把 truthy 真实导出（如 APICallError）
+  // 一并补齐，否则 vision.ts 里 `import { APICallError } from "ai"` 会因为解构到 undefined 而
+  // 整个模块加载报 SyntaxError（注意没有任何测试文件会报错一样，整个 bun test 进程共享
+  // 同一个模块注册表，单文件跑不会复现，全量跑或多文件一起跑才会因加载顺序踩错）。
+  const { APICallError } = await import("ai");
   mock.module("ai", () => ({
+    APICallError,
     generateText: async () => ({ text: "这是一张纯色测试图片" }),
   }));
 });
@@ -119,7 +125,9 @@ describe("handleUserPromptSubmit", () => {
   });
 
   test("视觉模型调用失败时输出错误块，不抛出异常", async () => {
+    const { APICallError } = await import("ai");
     mock.module("ai", () => ({
+      APICallError,
       generateText: async () => {
         throw new Error("网络超时");
       },
@@ -248,7 +256,9 @@ describe("handlePostToolUse", () => {
 
   test("命中磁盘缓存时不再重复调用视觉模型（同一张图第二次调用应复用缓存描述）", async () => {
     let callCount = 0;
+    const { APICallError } = await import("ai");
     mock.module("ai", () => ({
+      APICallError,
       generateText: async () => {
         callCount += 1;
         return { text: `第 ${callCount} 次解析` };

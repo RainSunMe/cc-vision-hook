@@ -30,8 +30,6 @@ export interface CvhConfig {
   maxTokens: number;
   /** 磁盘缓存 TTL（天）。全局共享，见 cache.ts。 */
   cache: { ttlDays: number };
-  /** 是否已安装 MCP server（仅用于 status/doctor 展示，不参与开关逻辑）。 */
-  mcpInstalled: boolean;
 }
 
 export const DEFAULT_CONFIG: CvhConfig = {
@@ -41,7 +39,6 @@ export const DEFAULT_CONFIG: CvhConfig = {
   timeoutMs: 45000,
   maxTokens: 1200,
   cache: { ttlDays: 7 },
-  mcpInstalled: false,
 };
 
 /**
@@ -74,6 +71,22 @@ export const loadConfig = async (): Promise<CvhConfig> => {
     return { ...DEFAULT_CONFIG, ...parsed, cache: { ...DEFAULT_CONFIG.cache, ...parsed.cache } };
   } catch {
     return { ...DEFAULT_CONFIG };
+  }
+};
+
+/**
+ * 检查配置文件是否已存在于磁盘（区别于 `loadConfig()`——后者文件不存在时会静默兜底返回
+ * 默认配置对象，不能用来判断"文件是否真的存在"，`cvh install` 需要这个区分来决定是否要
+ * 首次落盘写入默认配置）。
+ *
+ * @returns 配置文件是否存在
+ */
+export const configFileExists = async (): Promise<boolean> => {
+  try {
+    await readFile(getConfigPath(), "utf8");
+    return true;
+  } catch {
+    return false;
   }
 };
 

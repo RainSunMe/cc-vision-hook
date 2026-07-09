@@ -15,7 +15,7 @@
  * "oai" 选项形同虚设。必须显式调用 `openai.chat(modelId)` 才能真正拿到 Chat Completions 模型。
  */
 
-import { generateText } from "ai";
+import { generateText, APICallError } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -61,6 +61,43 @@ export const resolveModel = (config: CvhConfig) => {
 };
 
 /**
+ * 各 provider 期望 `baseUrl` 已经带上的路径段前缀（AI SDK 不会帮你补全，传什么用什么）。
+ * 导出供 `commands/configCmd.ts`（设置时提前警告）和本文件（调用失败后补充排查提示）
+ * 共用同一份定义，避免两处维护导致漂移。
+ *
+ * 实测踩坑：`@ai-sdk/anthropic` 只有在 `baseURL` 恰好等于官方地址时才会自动补 "/v1"，
+ * 自定义网关（如公司内部自建的兼容网关）传裸域名会直接拼成 "<baseUrl>/messages" 发出
+ * 404，且错误信息只有一句 "Not Found"，完全看不出是 baseUrl 缺路径段——第一次真机验证
+ * 时就在这里卡了一次，加这段针对性提示，避免同样的坑被别的用户/未来的自己重新踩一遍。
+ */
+export const EXPECTED_BASE_URL_SEGMENT: Record<CvhConfig["provider"], string> = {
+  oai: "/v1",
+  responses: "/v1",
+  anthropic: "/v1",
+  gemini: "/v1beta",
+};
+
+/**
+ * 当上游调用返回 404 且 `baseUrl` 明显缺少 provider 期望的路径段（如 `/v1`）时，
+ * 在错误信息里补一句排查提示，帮用户快速定位是配置问题而不是上游故障。
+ *
+ * @param error - `generateText()` 抛出的原始错误
+ * @param config - 当前生效的 cvh 配置
+ * @returns 补充了排查提示的 Error（未命中该场景时原样返回原始错误）
+ */
+const enhanceApiError = (error: unknown, config: CvhConfig): unknown => {
+  if (!(error instanceof APICallError) || error.statusCode !== 404) return error;
+  const expectedSegment = EXPECTED_BASE_URL_SEGMENT[config.provider];
+  if (!config.baseUrl || config.baseUrl.includes(expectedSegment)) return error;
+  return new Error(
+    `${error.message}（HTTP 404，请求地址：${error.url ?? "未知"}）\n` +
+      `⚠️  可能原因：baseUrl 缺少路径段 "${expectedSegment}"——AI SDK 不会自动补全自定义网关的 ` +
+      `baseUrl，需要手动带上完整路径前缀，例如 "${config.baseUrl}${expectedSegment}"。` +
+      `官方地址（如 https://api.openai.com）是例外，SDK 内部会特殊处理。`,
+  );
+};
+
+/**
  * 调用视觉模型解析一张图片，返回文字描述（或针对具体问题的回答）。
  *
  * @param base64 - 图片的 base64 编码数据（不含 data URI 前缀）
@@ -68,7 +105,8 @@ export const resolveModel = (config: CvhConfig) => {
  * @param config - 当前生效的 cvh 配置
  * @param question - 可选的具体提问（用于 vision_ask 追问场景），省略时使用通用描述提示词
  * @returns 视觉模型的文字回答
- * @throws 当上游调用失败或超时时抛出错误，调用方需要自行捕获并降级处理
+ * @throws 当上游调用失败或超时时抛出错误（404 + baseUrl 缺路径段场景会补充排查提示），
+ *   调用方需要自行捕获并降级处理
  */
 export const describeImage = async (
   base64: string,
@@ -78,19 +116,23 @@ export const describeImage = async (
 ): Promise<string> => {
   const model = resolveModel(config);
   const dataUrl = `data:${mimeType};base64,${base64}`;
-  const { text } = await generateText({
-    model,
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", image: dataUrl },
-          { type: "text", text: question ?? DEFAULT_DESCRIBE_PROMPT },
-        ],
-      },
-    ],
-    maxOutputTokens: config.maxTokens,
-    abortSignal: AbortSignal.timeout(config.timeoutMs),
-  });
-  return text;
+  try {
+    const { text } = await generateText({
+      model,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", image: dataUrl },
+            { type: "text", text: question ?? DEFAULT_DESCRIBE_PROMPT },
+          ],
+        },
+      ],
+      maxOutputTokens: config.maxTokens,
+      abortSignal: AbortSignal.timeout(config.timeoutMs),
+    });
+    return text;
+  } catch (error) {
+    throw enhanceApiError(error, config);
+  }
 };

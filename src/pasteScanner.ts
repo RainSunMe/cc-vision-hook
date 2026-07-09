@@ -10,14 +10,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, extname } from "node:path";
 import { getClaudeHomeDir } from "./config.js";
-
-const EXT_TO_MIME: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-};
+import { EXT_TO_MIME } from "./imageMime.js";
 
 /** 一个已落盘的粘贴图片文件。 */
 export interface PastedImageFile {

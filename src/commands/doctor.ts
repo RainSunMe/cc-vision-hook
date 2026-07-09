@@ -6,7 +6,11 @@
 import { stat } from "node:fs/promises";
 import { loadConfig, getConfigPath } from "../config.js";
 import { checkHooksInstalled } from "../claudeSettings.js";
-import { describeImage } from "../vision.js";
+import { checkMcpInstalled } from "../claudeMcp.js";
+import { describeImage, EXPECTED_BASE_URL_SEGMENT } from "../vision.js";
+
+/** 官方 API 地址不需要提示——AI SDK 对这几个官方域名有特殊处理，会自动补路径段。 */
+const OFFICIAL_ENDPOINT_RE = /^https:\/\/(api\.openai\.com|api\.anthropic\.com|generativelanguage\.googleapis\.com)/;
 
 // 1x1 透明 PNG，仅用于自检时验证视觉模型连通性，不产生真实业务含义。
 const PROBE_IMAGE_BASE64 =
@@ -42,7 +46,34 @@ export const runDoctor = async (jsonOutput: boolean): Promise<void> => {
   checks.push({ name: "UserPromptSubmit Hook 已注册", ok: hooks.userPromptSubmit, detail: hooks.userPromptSubmit ? "" : "请运行 cvh install" });
   checks.push({ name: "PostToolUse Hook 已注册", ok: hooks.postToolUse, detail: hooks.postToolUse ? "" : "请运行 cvh install" });
 
+  // MCP 是可选功能，未安装不算失败项（不计入 allOk），只是提示性展示——
+  // 呼应既定设计："cvh disable 不卸载 MCP，cvh enable 不安装 MCP"，MCP 与主开关正交。
+  const mcpInstalled = await checkMcpInstalled();
+  checks.push({
+    name: "MCP server 已注册（可选）",
+    ok: true,
+    detail: mcpInstalled ? "已注册，Agent 可调用 vision_ask 等工具" : "未注册（可选功能，运行 cvh mcp install 启用）",
+  });
+
   checks.push({ name: "API Key 已配置", ok: Boolean(config.apiKey), detail: config.apiKey ? "已设置" : "请运行 cvh config set apiKey <key>" });
+
+  // 真机验证时踩过的坑：AI SDK 不会给自定义网关的 baseUrl 自动补路径段（如 "/v1"），
+  // 裸域名会在真正调用视觉模型时才报一个语义不明的 404，排查成本很高。这里提前检查，
+  // 不管 provider/baseUrl 是以什么顺序设置的都能覆盖（config set 时的警告只能覆盖
+  // "先设 provider 再设 baseUrl" 这一种顺序，这里用最终生效的配置兜底检查所有顺序）。
+  if (config.baseUrl) {
+    const expectedSegment = EXPECTED_BASE_URL_SEGMENT[config.provider];
+    const isOfficial = OFFICIAL_ENDPOINT_RE.test(config.baseUrl);
+    const looksOk = isOfficial || config.baseUrl.includes(expectedSegment);
+    checks.push({
+      name: "baseUrl 路径段检查",
+      ok: looksOk,
+      detail: looksOk
+        ? ""
+        : `baseUrl "${config.baseUrl}" 可能缺少 ${config.provider} provider 期望的路径段 "${expectedSegment}"，` +
+          `建议改成 "${config.baseUrl}${expectedSegment}"，否则调用时会收到语义不明的 404`,
+    });
+  }
 
   if (config.apiKey) {
     try {

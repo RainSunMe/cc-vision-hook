@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.0
+
+### Minor Changes
+
+- 新增 `cvh init` 交互式安装向导，以及可选的 MCP server（`cvh mcp install`/`uninstall`/`status`/`serve`），暴露 `vision_ask`/`vision_describe_image`/`vision_describe_data_url` 三个工具，让 Agent 可以对已解析过的图片主动追问，或直接解析一张新图片/data URL（不依赖历史缓存命中）。
+
+  修复：
+
+  - `cvh install` 此前从未真正创建过配置文件——`loadConfig()` 内部自带 try/catch 兜底，文件不存在时会静默返回默认配置对象而不是抛错，导致 `install.ts` 里 `loadConfig().catch(() => null)` 的判空逻辑永远不会触发。新增 `configFileExists()` 显式检查磁盘状态并修正该逻辑。
+  - `cvh uninstall`（含 `--purge`）现在会同时移除 MCP server 注册，避免卸载后残留一个孤立的 MCP 条目。
+  - 移除了从未被读取的 `CvhConfig.mcpInstalled` 死字段——MCP 注册状态统一通过 `checkMcpInstalled()` 实时读取 `~/.claude.json`，不再有可能与真实状态不一致的静态字段。
+  - **`baseUrl` 缺少路径段时报错信息完全看不出原因**：真机回归测试（Claude Code 2.1.205 + 一个自建兼容网关）时发现，AI SDK 不会给自定义网关的 `baseUrl` 自动补路径段（如 `/v1`），传入裸域名会在真正调用视觉模型时收到一句语义不明的 404 `"Not Found"`，排查成本很高。现在 `describeImage()` 会在 404 + `baseUrl` 明显缺路径段时补充排查提示；`cvh config set baseUrl` 会在设置时提前给出非阻断性警告；`cvh doctor` 新增 `baseUrl 路径段检查` 项。
+
+  其他：
+
+  - `cvh doctor`/`cvh status` 新增 MCP 注册状态展示（MCP 未注册不影响整体自检结果，属于可选功能）。
+  - 补齐 `pasteScanner.ts`/`seenTracker.ts`/`commands/*.ts` 的单测覆盖。
+
+  真机回归（Claude Code 升级到 2.1.205 后重新验证）：
+
+  - `PostToolUse` Hook（`Read` 工具触发）：真实调用一个静默忽略图片型模型 + 自建兼容网关，图片识别正确率、`additionalContext` 注入、2 轮完成对话均验证通过。
+  - MCP server：`claude mcp list` 确认 stdio 连接成功；真实让 Agent 主动调用 `mcp__cc-vision-hook__vision_describe_image` 工具，返回结果正确。
+
 ## 0.1.1
 
 ### Patch Changes

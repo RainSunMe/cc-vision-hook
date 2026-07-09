@@ -49,6 +49,7 @@ flowchart LR
 - Both hooks **only ever output `additionalContext`** — never `updatedToolOutput`. This keeps `cvh` simple and safe: no per-tool schema replication, no risk of a silently-dropped hook output because the replacement shape didn't match.
 - Vision inference goes through the [Vercel AI SDK](https://sdk.vercel.ai/), so you can point `cvh` at OpenAI (Chat Completions or Responses), Anthropic, or Gemini — or any OpenAI/Anthropic-compatible gateway.
 - Descriptions are cached on disk by image content hash (`~/.claude/cc-vision-hook/cache/`), shared globally, with a 7-day lazy-expiring TTL — the same image is only ever described once, no matter where it came from.
+- An optional **MCP server** (`cvh mcp install`) exposes `vision_ask` / `vision_describe_image` / `vision_describe_data_url`, so the agent can proactively follow up on an image it already saw ("what does the text in the top-right corner say?") instead of only getting a one-shot description. MCP registration is independent from the `enabled` switch — disabling `cvh` does not uninstall the MCP server, and vice versa.
 
 ## Scope & limitations
 
@@ -63,6 +64,15 @@ Other known limitations:
 5. Images are sent to whichever third-party vision provider you configure. You are responsible for that data flow — review your provider's data handling policy if your screenshots may contain sensitive information.
 
 ## Install
+
+Interactive (recommended for a first-time setup):
+
+```bash
+npm install -g cc-vision-hook
+cvh init      # asks for provider/model/apiKey, registers hooks, optionally MCP + enable
+```
+
+Or non-interactive, e.g. for scripting:
 
 ```bash
 npm install -g cc-vision-hook
@@ -79,15 +89,18 @@ cvh enable
 
 | Command | Description |
 |---|---|
-| `cvh install` | Create config + register hooks (idempotent, safe to re-run) |
-| `cvh uninstall [--purge]` | Remove hook registration; `--purge` also deletes config and cache |
+| `cvh init` | Interactive setup wizard (provider/model/apiKey, hooks, optional MCP + enable) |
+| `cvh install` | Non-interactive: create config + register hooks (idempotent, safe to re-run) |
+| `cvh uninstall [--purge]` | Remove hook + MCP registration; `--purge` also deletes config and cache |
 | `cvh enable` / `cvh disable` | The one and only runtime switch |
-| `cvh status` | Show current state, hook registration, cache stats |
+| `cvh status` | Show current state, hook/MCP registration, cache stats |
 | `cvh doctor` | Self-check config / hooks / vision model connectivity, plus a boundary reminder |
 | `cvh config get` / `cvh config set <key> <value>` | Read/write config (`provider`/`model`/`baseUrl`/`apiKey`/`timeoutMs`/`maxTokens`) |
 | `cvh test-image <path>` | Manually verify the pipeline: local image → vision model → description |
+| `cvh mcp install` / `cvh mcp uninstall` / `cvh mcp status` | Register/remove/inspect the optional MCP server (`vision_ask` etc.) |
+| `cvh mcp serve` | Run the MCP stdio server (invoked by Claude Code itself, not by hand) |
 
-Every command supports `--json` output for scripting.
+Every command except `init` supports `--json` output for scripting.
 
 ## Configuration
 
@@ -110,10 +123,21 @@ The API key is stored in plaintext; the file permission is automatically set to 
 
 Environment variable overrides (take priority over the config file): `CVH_ENABLED` / `CVH_PROVIDER` / `CVH_MODEL` / `CVH_BASE_URL` / `CVH_API_KEY` / `CVH_TIMEOUT_MS` / `CVH_MAX_TOKENS`.
 
-## Roadmap
+## MCP tools (optional)
 
-- [ ] `cvh init` — interactive setup wizard.
-- [ ] MCP tools (`vision_ask`, `vision_describe_image`, `vision_describe_data_url`) so an agent can follow up on a previously seen image. The on-disk cache already stores everything needed — the MCP surface just hasn't been wired up yet.
+```bash
+cvh mcp install     # register the MCP server in ~/.claude.json (independent of `enabled`)
+```
+
+This exposes three tools to the agent:
+
+| Tool | Purpose |
+|---|---|
+| `vision_ask` | Follow up on an image previously seen via a hook or another MCP call, by `image_id` (from the `image_vision`/`tool_image_vision` tag in `additionalContext`). |
+| `vision_describe_image` | Describe a local image file directly, without relying on a prior cache hit. |
+| `vision_describe_data_url` | Describe an inline `data:image/...;base64,...` URL directly. |
+
+`vision_describe_image`/`vision_describe_data_url` results are cached on disk the same way hook-produced descriptions are, so a later `vision_ask` can follow up on them too.
 
 ## Troubleshooting
 

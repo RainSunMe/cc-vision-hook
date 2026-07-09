@@ -7,6 +7,7 @@ export type { CvhConfig, CvhProvider } from "../config.js";
 export { DEFAULT_CONFIG, loadConfig, saveConfig, resolveConfig } from "../config.js";
 
 export { installHooks, uninstallHooks, checkHooksInstalled } from "../claudeSettings.js";
+export { installMcpServer, uninstallMcpServer, checkMcpInstalled } from "../claudeMcp.js";
 
 export { extractImages, type ExtractedImage } from "../extract.js";
 export { describeImage } from "../vision.js";
@@ -14,3 +15,5 @@ export { computeImageId, findCacheByBytes, putCacheEntry, getCacheEntry, getCach
 
 export { handleUserPromptSubmit, type UserPromptSubmitInput, type HookOutput } from "../hooks/userPromptSubmit.js";
 export { handlePostToolUse, type PostToolUseInput } from "../hooks/postToolUse.js";
+
+export { createVisionMcpServer, serveMcpStdio } from "../mcpServer.js";

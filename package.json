@@ -1,6 +1,6 @@
 {
   "name": "cc-vision-hook",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Claude Code Hook toolkit that lets vision-blind (silently-ignoring) models understand pasted/tool-produced images by appending an AI-generated description as additionalContext.",
   "type": "module",
   "license": "MIT",
@@ -46,7 +46,9 @@
     "@ai-sdk/anthropic": "^3.0.81",
     "@ai-sdk/google": "^3.0.0",
     "@ai-sdk/openai": "^3.0.0",
-    "ai": "^6.0.194"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "ai": "^6.0.194",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

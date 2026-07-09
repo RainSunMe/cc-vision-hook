@@ -6,14 +6,7 @@ import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import { loadConfig } from "../config.js";
 import { describeImage } from "../vision.js";
-
-const EXT_TO_MIME: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-};
+import { EXT_TO_MIME } from "../imageMime.js";
 
 /**
  * 读取本地图片文件，调用当前配置的视觉模型解析并打印结果。
