@@ -3,7 +3,7 @@
  * 三个工具，让 Claude 主模型在对话中可以主动追问此前已被 Hook 处理过的图片，
  * 或直接解析一张新的本地图片/data URL（不依赖磁盘缓存命中）。
  *
- * 设计对齐 docs/research/cc-vision-hook-design-2026-07-08.md §8.3：
+ * 设计对齐 docs/research/cc-vision-hook/design-2026-07-08.md §8.3：
  * - `vision_ask`：按 image_id 从磁盘缓存取回原图字节，用 describeImage() 追问，
  *   不写回缓存的 description 字段（避免用一次追问的针对性回答覆盖掉原本的通用描述）。
  * - `vision_describe_image` / `vision_describe_data_url`：直接解析，不依赖历史缓存命中，
